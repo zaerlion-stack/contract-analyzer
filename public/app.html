@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>محلل عقود العقارات</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    background: #f4f6fb;
+    color: #1a202c;
+    direction: rtl;
+    min-height: 100vh;
+  }
+
+  /* Navbar */
+  .navbar {
+    background: #fff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0 24px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 16px; color: #2d3748; }
+  .nav-logo span { font-size: 22px; }
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+  .usage-badge {
+    background: #f4f6fb;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #4a5568;
+  }
+  .usage-badge .used { color: #667eea; }
+  .user-name { font-size: 14px; font-weight: 600; color: #4a5568; }
+  .btn-logout {
+    padding: 7px 14px;
+    background: #f4f6fb;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #718096;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .btn-logout:hover { background: #fff5f5; color: #c53030; border-color: #feb2b2; }
+
+  /* Main */
+  .main { max-width: 860px; margin: 0 auto; padding: 28px 16px; }
+
+  .page-header { margin-bottom: 24px; }
+  .page-header h1 { font-size: 24px; font-weight: 800; color: #2d3748; margin-bottom: 4px; }
+  .page-header p { color: #718096; font-size: 14px; }
+
+  /* Limit warning */
+  .limit-warning {
+    background: #fffaf0;
+    border: 1px solid #fbd38d;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: none;
+    align-items: center;
+    gap: 12px;
+  }
+  .limit-warning.show { display: flex; }
+  .limit-warning.danger { background: #fff5f5; border-color: #feb2b2; }
+  .limit-icon { font-size: 24px; }
+  .limit-text { flex: 1; font-size: 14px; color: #744210; }
+  .limit-warning.danger .limit-text { color: #c53030; }
+
+  .card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 22px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .card-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #718096;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .upload-area {
+    border: 2px dashed #cbd5e0;
+    border-radius: 12px;
+    padding: 28px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #f7fafc;
+    margin-bottom: 14px;
+  }
+  .upload-area:hover, .upload-area.dragover { border-color: #667eea; background: #ebf4ff; }
+  .upload-icon { font-size: 36px; margin-bottom: 8px; }
+  .upload-text { color: #718096; font-size: 14px; line-height: 1.6; }
+  .upload-text strong { color: #667eea; }
+  #fileInput { display: none; }
+
+  .file-badge {
+    display: none; align-items: center; gap: 8px;
+    background: #f0fff4; border: 1px solid #9ae6b4;
+    border-radius: 8px; padding: 10px 14px;
+    color: #276749; font-size: 14px; margin-bottom: 12px;
+  }
+  .file-badge.show { display: flex; }
+
+  .divider {
+    text-align: center; color: #a0aec0; margin: 14px 0;
+    font-size: 12px; position: relative;
+  }
+  .divider::before, .divider::after {
+    content: ''; position: absolute; top: 50%;
+    width: 44%; height: 1px; background: #e2e8f0;
+  }
+  .divider::before { right: 0; }
+  .divider::after { left: 0; }
+
+  textarea {
+    width: 100%; height: 150px; padding: 14px;
+    background: #f7fafc; border: 1.5px solid #e2e8f0;
+    border-radius: 10px; font-size: 14px; resize: vertical;
+    font-family: inherit; direction: rtl; line-height: 1.7;
+    color: #2d3748; transition: border-color 0.2s;
+  }
+  textarea:focus { outline: none; border-color: #667eea; background: #fff; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
+  textarea::placeholder { color: #a0aec0; }
+
+  .btn-analyze {
+    width: 100%; padding: 15px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white; border: none; border-radius: 12px;
+    font-size: 17px; font-weight: 700; cursor: pointer;
+    margin-bottom: 24px; transition: all 0.2s;
+    font-family: inherit;
+    box-shadow: 0 4px 14px rgba(102,126,234,0.35);
+  }
+  .btn-analyze:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-analyze:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .error-box {
+    background: #fff5f5; border: 1px solid #feb2b2;
+    border-radius: 10px; padding: 14px 18px; color: #c53030;
+    margin-bottom: 16px; display: none; font-size: 14px;
+  }
+
+  .loading { text-align: center; padding: 50px 20px; display: none; }
+  .loading-dots { display: flex; justify-content: center; gap: 8px; margin-bottom: 16px; }
+  .loading-dots span {
+    width: 12px; height: 12px; background: #667eea;
+    border-radius: 50%; animation: bounce 1.2s ease-in-out infinite;
+  }
+  .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+  .loading-text { color: #718096; font-size: 15px; }
+
+  /* Results */
+  .results { display: none; }
+  .results-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 20px; padding-bottom: 16px;
+    border-bottom: 1px solid #e2e8f0; flex-wrap: wrap;
+  }
+  .results-header h2 { font-size: 20px; font-weight: 700; color: #2d3748; flex: 1; }
+  .btn-pdf {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white; border: none; border-radius: 8px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: opacity 0.2s; font-family: inherit;
+    box-shadow: 0 2px 8px rgba(102,126,234,0.3);
+  }
+  .btn-pdf:hover { opacity: 0.85; }
+  .results-badge {
+    font-size: 12px; font-weight: 600;
+    padding: 3px 10px; border-radius: 20px; border: 1px solid;
+  }
+  .cost-badge {
+    background: #f0fff4; border: 1px solid #9ae6b4;
+    color: #276749; font-size: 12px; font-weight: 600;
+    padding: 3px 10px; border-radius: 20px;
+  }
+  .remaining-badge {
+    background: #ebf4ff; border: 1px solid #bee3f8;
+    color: #3182ce; font-size: 12px; font-weight: 600;
+    padding: 3px 10px; border-radius: 20px;
+  }
+
+  .summary-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+  .summary-stat {
+    background: #fff; border: 1px solid #e2e8f0;
+    border-radius: 12px; padding: 16px; text-align: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .summary-stat .num { font-size: 28px; font-weight: 800; display: block; margin-bottom: 4px; }
+  .summary-stat .num.red { color: #e53e3e; }
+  .summary-stat .num.orange { color: #dd6b20; }
+  .summary-stat .num.blue { color: #5a67d8; }
+  .summary-stat .lbl { font-size: 12px; color: #718096; }
+
+  .result-item {
+    background: #fff; border: 1px solid #e2e8f0;
+    border-radius: 14px; margin-bottom: 14px; overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .result-item:hover { border-color: #a3bffa; box-shadow: 0 4px 12px rgba(102,126,234,0.1); }
+  .result-item.redflag { border-color: #feb2b2; }
+  .result-item.warning { border-color: #fbd38d; }
+
+  .result-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; cursor: pointer; user-select: none; }
+  .result-header-right { display: flex; align-items: center; gap: 10px; }
+  .result-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .result-icon.blue { background: #ebf4ff; }
+  .result-icon.red { background: #fff5f5; }
+  .result-icon.orange { background: #fffaf0; }
+  .result-icon.green { background: #f0fff4; }
+  .result-title { font-size: 15px; font-weight: 700; color: #2d3748; }
+  .result-clause { font-size: 12px; color: #a0aec0; margin-top: 2px; }
+  .result-arrow { color: #a0aec0; font-size: 12px; transition: transform 0.2s; }
+  .result-item.open .result-arrow { transform: rotate(180deg); }
+
+  .result-body { display: none; padding: 0 18px 18px; border-top: 1px solid #f0f4f8; }
+  .result-item.open .result-body { display: block; }
+
+  .clause-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #ebf4ff; border: 1px solid #bee3f8;
+    border-radius: 6px; padding: 3px 10px;
+    font-size: 12px; color: #3182ce; font-weight: 600;
+    margin-top: 12px; margin-bottom: 10px;
+  }
+  .clause-tag.red { background: #fff5f5; border-color: #fed7d7; color: #c53030; }
+  .clause-tag.orange { background: #fffaf0; border-color: #feebc8; color: #c05621; }
+  .clause-tag.green { background: #f0fff4; border-color: #c6f6d5; color: #276749; }
+
+  .result-text { font-size: 14px; line-height: 1.8; color: #4a5568; white-space: pre-wrap; }
+  .not-found-text { color: #a0aec0; font-style: italic; font-size: 14px; }
+
+  .flag-list { list-style: none; padding: 0; margin-top: 12px; }
+  .flag-item { display: flex; gap: 12px; padding: 12px 14px; border-radius: 10px; margin-bottom: 10px; align-items: flex-start; }
+  .flag-item.red { background: #fff5f5; }
+  .flag-item.orange { background: #fffaf0; }
+  .flag-num { width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .flag-num.red { background: #fed7d7; color: #c53030; }
+  .flag-num.orange { background: #feebc8; color: #c05621; }
+  .flag-content { flex: 1; }
+  .flag-clause { font-size: 11px; font-weight: 600; margin-bottom: 4px; }
+  .flag-clause.red { color: #e53e3e; }
+  .flag-clause.orange { color: #dd6b20; }
+  .flag-text { font-size: 14px; line-height: 1.7; color: #4a5568; }
+
+  .extracted-preview {
+    background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 10px; font-size: 11px; color: #a0aec0;
+    direction: ltr; text-align: left; max-height: 80px; overflow: hidden;
+    margin-top: 10px; display: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <div class="nav-logo"><span>🏠</span> محلل العقود</div>
+  <div class="nav-right">
+    <div class="usage-badge">
+      العقود: <span class="used" id="usedCount">0</span> / <span id="limitCount">3</span>
+    </div>
+    <div class="user-name" id="userName"></div>
+    <button class="btn-logout" onclick="logout()">خروج</button>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="page-header">
+    <h1>تحليل العقد</h1>
+    <p>ارفع عقدك وهنحلله ونجيبلك أهم النقاط مع رقم كل بند</p>
+  </div>
+
+  <!-- Limit warning -->
+  <div class="limit-warning" id="limitWarning">
+    <div class="limit-icon">⚠️</div>
+    <div class="limit-text" id="limitText"></div>
+  </div>
+
+  <!-- Upload card -->
+  <div class="card">
+    <div class="card-label">📄 ارفع العقد</div>
+    <div class="upload-area" id="uploadArea">
+      <div class="upload-icon">📋</div>
+      <div class="upload-text">
+        <strong>اضغط هنا أو اسحب الملف</strong><br>
+        PDF · صورة · ملف نصي
+      </div>
+    </div>
+    <input type="file" id="fileInput" accept=".pdf,.txt,.png,.jpg,.jpeg" />
+    <div class="file-badge" id="fileName"><span>✅</span><span id="fileNameText"></span></div>
+    <div class="extracted-preview" id="extractedPreview"></div>
+    <div class="divider">أو الصق النص يدوياً</div>
+    <textarea id="contractText" placeholder="الصق نص العقد هنا..."></textarea>
+  </div>
+
+  <div class="error-box" id="errorBox"></div>
+
+  <button class="btn-analyze" id="analyzeBtn" onclick="analyzeContract()">
+    🔍 &nbsp; حلل العقد دلوقتي
+  </button>
+
+  <div class="loading" id="loading">
+    <div class="loading-dots"><span></span><span></span><span></span></div>
+    <div class="loading-text">بيتحلل العقد... لحظة ✨</div>
+  </div>
+
+  <div class="results" id="results"></div>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// Auth check
+const token = localStorage.getItem('auth_token');
+if (!token) window.location.href = '/';
+
+let userData = JSON.parse(localStorage.getItem('user_data') || '{}');
+let extractedText = '';
+
+// Load user data
+async function loadProfile() {
+  try {
+    const res = await fetch('/api/profile', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) { logout(); return; }
+    userData = await res.json();
+    localStorage.setItem('user_data', JSON.stringify(userData));
+    updateUI();
+  } catch(e) { updateUI(); }
+}
+
+function updateUI() {
+  document.getElementById('userName').textContent = userData.name || '';
+  document.getElementById('usedCount').textContent = userData.analyses_used || 0;
+  document.getElementById('limitCount').textContent = userData.analyses_limit || 3;
+
+  const used = userData.analyses_used || 0;
+  const limit = userData.analyses_limit || 3;
+  const remaining = limit - used;
+
+  const warning = document.getElementById('limitWarning');
+  const limitText = document.getElementById('limitText');
+
+  if (remaining === 0) {
+    warning.classList.add('show', 'danger');
+    limitText.textContent = 'وصلت للحد المسموح. تواصل معنا للترقية وتحليل عقود أكتر.';
+    document.getElementById('analyzeBtn').disabled = true;
+  } else if (remaining === 1) {
+    warning.classList.add('show');
+    limitText.textContent = `فاضل عقد واحد بس من التجربة المجانية. استخدمه بحكمة! 😊`;
+  }
+}
+
+function logout() {
+  localStorage.removeItem('auth_token');
+  localStorage.removeItem('user_data');
+  window.location.href = '/';
+}
+
+loadProfile();
+
+// Upload
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
+uploadArea.addEventListener('click', () => fileInput.click());
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault(); uploadArea.classList.remove('dragover');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
+
+async function handleFile(file) {
+  document.getElementById('fileNameText').textContent = file.name;
+  document.getElementById('fileName').classList.add('show');
+  document.getElementById('extractedPreview').style.display = 'none';
+
+  if (file.type === 'application/pdf') {
+    try {
+      const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+      let text = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        text += content.items.map(item => item.str).join(' ') + '\n';
+      }
+      extractedText = text;
+      const preview = document.getElementById('extractedPreview');
+      preview.textContent = text.substring(0, 300) + '...';
+      preview.style.display = 'block';
+    } catch(e) { showError('فشل في قراءة الـ PDF. جرب تنسخ النص يدوياً.'); }
+  } else if (file.type === 'text/plain') {
+    extractedText = await file.text();
+    const preview = document.getElementById('extractedPreview');
+    preview.textContent = extractedText.substring(0, 300) + '...';
+    preview.style.display = 'block';
+  } else if (file.type.startsWith('image/')) {
+    extractedText = '__IMAGE__';
+    window._imageFile = file;
+  } else {
+    showError('نوع الملف مش مدعوم.');
+  }
+}
+
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = '⚠️ ' + msg;
+  box.style.display = 'block';
+  setTimeout(() => box.style.display = 'none', 6000);
+}
+
+function toggleItem(el) { el.classList.toggle('open'); }
+
+async function analyzeContract() {
+  const manualText = document.getElementById('contractText').value.trim();
+  let contractContent = manualText || extractedText;
+  if (!contractContent) return showError('ارفع عقد أو الصق النص الأول');
+
+  document.getElementById('analyzeBtn').disabled = true;
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('errorBox').style.display = 'none';
+
+  try {
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify({ text: contractContent === '__IMAGE__' ? 'image' : contractContent })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      if (data.limit_reached) {
+        showError(data.error);
+        loadProfile();
+        return;
+      }
+      throw new Error(data.error);
+    }
+
+    // Update usage
+    userData.analyses_used = (userData.analyses_used || 0) + 1;
+    localStorage.setItem('user_data', JSON.stringify(userData));
+    updateUI();
+
+    displayResults(data.analysis, data.usage, data.remaining);
+  } catch (err) {
+    showError(err.message || 'حصل خطأ. حاول تاني.');
+  } finally {
+    const used = userData.analyses_used || 0;
+    const limit = userData.analyses_limit || 3;
+    if (used < limit) document.getElementById('analyzeBtn').disabled = false;
+    document.getElementById('loading').style.display = 'none';
+  }
+}
+
+function clauseTag(clause, color='blue') {
+  if (!clause || clause === '-') return '';
+  return `<div class="clause-tag ${color}">📌 ${clause}</div>`;
+}
+
+function displayResults(analysis, usage, remaining) {
+  const container = document.getElementById('results');
+
+  if (analysis.raw) {
+    container.innerHTML = `
+      <div class="result-item open">
+        <div class="result-header" onclick="toggleItem(this.parentElement)">
+          <div class="result-header-right">
+            <div class="result-icon blue">📋</div>
+            <div><div class="result-title">نتيجة التحليل</div></div>
+          </div>
+          <div class="result-arrow">▼</div>
+        </div>
+        <div class="result-body"><div class="result-text">${analysis.raw}</div></div>
+      </div>`;
+    container.style.display = 'block';
+    return;
+  }
+
+  const redFlagsCount = (analysis['red_flags'] || []).length;
+  const notesCount = (analysis['ملاحظات_مهمة'] || []).length;
+  const getVal = (obj) => typeof obj === 'object' && obj !== null ? obj : { النص: obj, رقم_البند: '' };
+
+  const fields = [
+    { key: 'فسخ_العقد',     icon: '🚫', title: 'غرامة فسخ العقد', color: 'red',    iconClass: 'red' },
+    { key: 'غرامة_التاخير', icon: '⏰', title: 'غرامة التأخير',    color: 'orange', iconClass: 'orange' },
+    { key: 'قرار_التخصيص', icon: '📑', title: 'قرار التخصيص',     color: 'blue',   iconClass: 'blue' },
+    { key: 'طريقة_الدفع',  icon: '💰', title: 'طريقة الدفع',      color: 'green',  iconClass: 'green' },
+    { key: 'موعد_التسليم', icon: '🏗️', title: 'موعد التسليم',     color: 'blue',   iconClass: 'blue' },
+  ];
+
+  window._lastAnalysis = analysis;
+  window._lastUsage = usage;
+
+  const costBadge = usage ? `<span class="cost-badge">💰 $${usage.cost_usd}</span>` : '';
+  const remainBadge = remaining !== undefined ? `<span class="remaining-badge">🎫 فاضل ${remaining} عقد</span>` : '';
+
+  let html = `
+    <div class="results-header">
+      <h2>📊 نتيجة التحليل</h2>
+      ${redFlagsCount > 0 ? `<span class="results-badge" style="background:#fff5f5;color:#c53030;border-color:#feb2b2;">⚠️ ${redFlagsCount} تحذير</span>` : ''}
+      ${costBadge}
+      ${remainBadge}
+      <button class="btn-pdf" onclick="downloadPDF()">⬇️ PDF</button>
+    </div>
+    <div class="summary-bar">
+      <div class="summary-stat"><span class="num red">${redFlagsCount}</span><span class="lbl">Red Flags</span></div>
+      <div class="summary-stat"><span class="num orange">${notesCount}</span><span class="lbl">ملاحظة مهمة</span></div>
+      <div class="summary-stat"><span class="num blue">${fields.length}</span><span class="lbl">بند محلل</span></div>
+    </div>`;
+
+  for (const field of fields) {
+    const raw = getVal(analysis[field.key]);
+    const text = raw['النص'] || '';
+    const clause = raw['رقم_البند'] || '';
+    const isEmpty = !text || text.includes('غير موجود');
+    html += `
+      <div class="result-item open">
+        <div class="result-header" onclick="toggleItem(this.parentElement)">
+          <div class="result-header-right">
+            <div class="result-icon ${field.iconClass}">${field.icon}</div>
+            <div>
+              <div class="result-title">${field.title}</div>
+              ${clause && clause !== '-' ? `<div class="result-clause">📌 ${clause}</div>` : ''}
+            </div>
+          </div>
+          <div class="result-arrow">▼</div>
+        </div>
+        <div class="result-body">
+          ${clauseTag(clause, field.color)}
+          <div class="result-text ${isEmpty ? 'not-found-text' : ''}">${text || 'غير موجود في العقد'}</div>
+        </div>
+      </div>`;
+  }
+
+  const redFlags = analysis['red_flags'] || [];
+  if (redFlags.length > 0) {
+    const items = redFlags.map((f, i) => {
+      const item = getVal(f);
+      return `<li class="flag-item red">
+        <div class="flag-num red">${i+1}</div>
+        <div class="flag-content">
+          ${item['رقم_البند'] && item['رقم_البند'] !== '-' ? `<div class="flag-clause red">📌 ${item['رقم_البند']}</div>` : ''}
+          <div class="flag-text">${item['النص'] || f}</div>
+        </div></li>`;
+    }).join('');
+    html += `
+      <div class="result-item redflag open">
+        <div class="result-header" onclick="toggleItem(this.parentElement)">
+          <div class="result-header-right">
+            <div class="result-icon red">🚨</div>
+            <div><div class="result-title">Red Flags — تحذيرات مهمة</div><div class="result-clause">${redFlags.length} تحذير</div></div>
+          </div>
+          <div class="result-arrow">▼</div>
+        </div>
+        <div class="result-body"><ul class="flag-list">${items}</ul></div>
+      </div>`;
+  }
+
+  const notes = analysis['ملاحظات_مهمة'] || [];
+  if (notes.length > 0) {
+    const items = notes.map((n, i) => {
+      const item = getVal(n);
+      return `<li class="flag-item orange">
+        <div class="flag-num orange">${i+1}</div>
+        <div class="flag-content">
+          ${item['رقم_البند'] && item['رقم_البند'] !== '-' ? `<div class="flag-clause orange">📌 ${item['رقم_البند']}</div>` : ''}
+          <div class="flag-text">${item['النص'] || n}</div>
+        </div></li>`;
+    }).join('');
+    html += `
+      <div class="result-item warning open">
+        <div class="result-header" onclick="toggleItem(this.parentElement)">
+          <div class="result-header-right">
+            <div class="result-icon orange">📌</div>
+            <div><div class="result-title">ملاحظات يجب تعرفها</div><div class="result-clause">${notes.length} ملاحظة</div></div>
+          </div>
+          <div class="result-arrow">▼</div>
+        </div>
+        <div class="result-body"><ul class="flag-list">${items}</ul></div>
+      </div>`;
+  }
+
+  container.innerHTML = html;
+  container.style.display = 'block';
+  container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function downloadPDF() {
+  const analysis = window._lastAnalysis;
+  const usage = window._lastUsage;
+  if (!analysis) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pageW = 210, pageH = 297, margin = 15, contentW = pageW - margin * 2;
+  let y = margin;
+  const getVal = (obj) => typeof obj === 'object' && obj !== null ? obj : { النص: obj, رقم_البند: '' };
+  function checkPage(needed = 10) { if (y + needed > pageH - margin) { doc.addPage(); y = margin; } }
+  function rtlText(text, x, yPos, opts = {}) { doc.text(String(text || ''), x, yPos, { align: 'right', ...opts }); }
+
+  doc.setFillColor(102, 126, 234);
+  doc.rect(0, 0, pageW, 28, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(16); doc.setFont('helvetica', 'bold');
+  rtlText('Real Estate Contract Analysis', pageW - margin, 12);
+  doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+  rtlText(new Date().toLocaleDateString('ar-EG'), pageW - margin, 20);
+  if (usage) doc.text(`Cost: $${usage.cost_usd}`, margin, 20);
+  y = 36;
+
+  const redCount = (analysis['red_flags'] || []).length;
+  const noteCount = (analysis['ملاحظات_مهمة'] || []).length;
+  const boxes = [
+    { label: 'Red Flags', val: redCount, color: [229, 62, 62] },
+    { label: 'Notes', val: noteCount, color: [221, 107, 32] },
+    { label: 'Sections', val: 5, color: [90, 103, 216] },
+  ];
+  const boxW = (contentW - 8) / 3;
+  boxes.forEach((b, i) => {
+    const bx = margin + i * (boxW + 4);
+    doc.setFillColor(247, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.roundedRect(bx, y, boxW, 18, 3, 3, 'FD');
+    doc.setTextColor(...b.color);
+    doc.setFontSize(16); doc.setFont('helvetica', 'bold');
+    doc.text(String(b.val), bx + boxW / 2, y + 10, { align: 'center' });
+    doc.setFontSize(8); doc.setFont('helvetica', 'normal');
+    doc.setTextColor(113, 128, 150);
+    doc.text(b.label, bx + boxW / 2, y + 15, { align: 'center' });
+  });
+  y += 26;
+
+  const sections = [
+    { key: 'فسخ_العقد',     icon: 'X', title: 'Contract Cancellation Penalty', color: [229,62,62] },
+    { key: 'غرامة_التاخير', icon: '!', title: 'Delay Penalty',                 color: [221,107,32] },
+    { key: 'قرار_التخصيص', icon: '#', title: 'Allocation Decision',            color: [90,103,216] },
+    { key: 'طريقة_الدفع',  icon: '$', title: 'Payment Method',                 color: [39,103,73] },
+    { key: 'موعد_التسليم', icon: 'T', title: 'Delivery Date',                  color: [90,103,216] },
+  ];
+
+  sections.forEach(s => {
+    const raw = getVal(analysis[s.key]);
+    const text = raw['النص'] || 'Not found';
+    const clause = raw['رقم_البند'] || '';
+    checkPage(20);
+    doc.setFillColor(247, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.roundedRect(margin, y, contentW, 8, 2, 2, 'FD');
+    doc.setTextColor(...s.color);
+    doc.setFontSize(9); doc.setFont('helvetica', 'bold');
+    rtlText(`${s.title}`, pageW - margin - 2, y + 5.5);
+    if (clause && clause !== '-') {
+      doc.setTextColor(49, 130, 206);
+      doc.setFontSize(7);
+      doc.text(`[${clause}]`, margin + 3, y + 5.5);
+    }
+    y += 10;
+    doc.setTextColor(74, 85, 104);
+    doc.setFontSize(8); doc.setFont('helvetica', 'normal');
+    const lines = doc.splitTextToSize(text, contentW - 6);
+    lines.forEach(line => { checkPage(6); rtlText(line, pageW - margin - 2, y); y += 5; });
+    y += 5;
+  });
+
+  const redFlags = analysis['red_flags'] || [];
+  if (redFlags.length > 0) {
+    checkPage(14);
+    doc.setFillColor(255, 245, 245);
+    doc.setDrawColor(254, 178, 178);
+    doc.roundedRect(margin, y, contentW, 8, 2, 2, 'FD');
+    doc.setTextColor(197, 48, 48);
+    doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+    rtlText(`! Red Flags (${redFlags.length})`, pageW - margin - 2, y + 5.5);
+    y += 11;
+    redFlags.forEach((f, i) => {
+      const item = getVal(f);
+      checkPage(12);
+      const clauseStr = item['رقم_البند'] && item['رقم_البند'] !== '-' ? ` [${item['رقم_البند']}]` : '';
+      doc.setFillColor(255, 250, 250);
+      doc.roundedRect(margin, y, contentW, 5, 1, 1, 'F');
+      doc.setTextColor(197, 48, 48);
+      doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+      doc.text(`${i + 1}`, margin + 3, y + 3.5);
+      y += 6;
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(74, 85, 104);
+      const lines = doc.splitTextToSize((item['النص'] || f) + clauseStr, contentW - 8);
+      lines.forEach(line => { checkPage(5); rtlText(line, pageW - margin - 2, y); y += 4.5; });
+      y += 2;
+    });
+    y += 4;
+  }
+
+  const notes = analysis['ملاحظات_مهمة'] || [];
+  if (notes.length > 0) {
+    checkPage(14);
+    doc.setFillColor(255, 250, 240);
+    doc.setDrawColor(251, 211, 141);
+    doc.roundedRect(margin, y, contentW, 8, 2, 2, 'FD');
+    doc.setTextColor(192, 86, 33);
+    doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+    rtlText(`* Important Notes (${notes.length})`, pageW - margin - 2, y + 5.5);
+    y += 11;
+    notes.forEach((n, i) => {
+      const item = getVal(n);
+      checkPage(12);
+      const clauseStr = item['رقم_البند'] && item['رقم_البند'] !== '-' ? ` [${item['رقم_البند']}]` : '';
+      doc.setFillColor(255, 253, 245);
+      doc.roundedRect(margin, y, contentW, 5, 1, 1, 'F');
+      doc.setTextColor(192, 86, 33);
+      doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+      doc.text(`${i + 1}`, margin + 3, y + 3.5);
+      y += 6;
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(74, 85, 104);
+      const lines = doc.splitTextToSize((item['النص'] || n) + clauseStr, contentW - 8);
+      lines.forEach(line => { checkPage(5); rtlText(line, pageW - margin - 2, y); y += 4.5; });
+      y += 2;
+    });
+  }
+
+  const totalPages = doc.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    doc.setFillColor(247, 250, 252);
+    doc.rect(0, pageH - 10, pageW, 10, 'F');
+    doc.setTextColor(160, 174, 192);
+    doc.setFontSize(7); doc.setFont('helvetica', 'normal');
+    doc.text(`${p} / ${totalPages}`, pageW / 2, pageH - 4, { align: 'center' });
+    doc.text('Contract Analyzer', margin, pageH - 4);
+  }
+
+  doc.save(`contract-${Date.now()}.pdf`);
+}
+</script>
+</body>
+</html>
