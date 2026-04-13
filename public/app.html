@@ -6,6 +6,7 @@
 <title>محلل عقود العقارات</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -674,9 +675,57 @@ function displayResults(analysis, usage, remaining) {
   container.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function downloadPDF() {
+async function downloadPDF() {
   const analysis = window._lastAnalysis;
-  const usage = window._lastUsage;
+  if (!analysis) return;
+
+  const btn = document.querySelector('.btn-pdf-big');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '⏳ جاري التحضير...';
+  btn.disabled = true;
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const container = document.getElementById('results');
+
+    // Capture the results div as image
+    const canvas = await html2canvas(container, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#f4f6fb',
+      scrollY: 0,
+      windowWidth: container.scrollWidth,
+    });
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.92);
+    const pageW = 210, pageH = 297;
+    const imgW = pageW;
+    const imgH = (canvas.height * pageW) / canvas.width;
+
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    let yPos = 0;
+    let remaining = imgH;
+
+    while (remaining > 0) {
+      if (yPos > 0) doc.addPage();
+      const sliceH = Math.min(remaining, pageH);
+      doc.addImage(imgData, 'JPEG', 0, -yPos, imgW, imgH);
+      yPos += pageH;
+      remaining -= sliceH;
+    }
+
+    doc.save('تحليل-العقد-' + Date.now() + '.pdf');
+  } catch(e) {
+    alert('حصل خطأ في التحميل: ' + e.message);
+  } finally {
+    btn.innerHTML = orig;
+    btn.disabled = false;
+  }
+}
+
+function _downloadPDF_OLD() {
+  const analysis = window._lastAnalysis;
   if (!analysis) return;
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -819,7 +868,7 @@ function downloadPDF() {
   }
 
   doc.save(`contract-${Date.now()}.pdf`);
-}
+} // end _downloadPDF_OLD
 </script>
 </body>
 </html>
