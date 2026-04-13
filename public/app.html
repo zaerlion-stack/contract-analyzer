@@ -282,6 +282,27 @@
     direction: ltr; text-align: left; max-height: 80px; overflow: hidden;
     margin-top: 10px; display: none;
   }
+
+  /* Upload Loader */
+  .upload-area.loading-state {
+    border-color: #667eea;
+    background: #f0f4ff;
+    cursor: default;
+    pointer-events: none;
+  }
+  .upload-spinner {
+    width: 40px; height: 40px;
+    border: 3px solid #e2e8f0;
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .upload-progress {
+    font-size: 13px; color: #667eea; font-weight: 600; margin-bottom: 4px;
+  }
+  .upload-sub { font-size: 12px; color: #a0aec0; }
 </style>
 </head>
 <body>
@@ -412,19 +433,34 @@ async function handleFile(file) {
   document.getElementById('extractedPreview').style.display = 'none';
 
   if (file.type === 'application/pdf') {
+    const area = document.getElementById('uploadArea');
+    // Show upload loader
+    area.classList.add('loading-state');
+    area.innerHTML = `
+      <div class="upload-spinner"></div>
+      <div class="upload-progress">جاري قراءة الـ PDF...</div>
+      <div class="upload-sub">برجاء الانتظار</div>`;
     try {
       const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
       let text = '';
       for (let i = 1; i <= pdf.numPages; i++) {
+        area.querySelector('.upload-progress').textContent = `جاري قراءة صفحة ${i} من ${pdf.numPages}...`;
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
         text += content.items.map(item => item.str).join(' ') + '\n';
       }
       extractedText = text;
+      // Done — restore area
+      area.classList.remove('loading-state');
+      area.innerHTML = `<div class="upload-icon">✅</div><div class="upload-text"><strong>تم قراءة الملف</strong><br>${pdf.numPages} صفحة — جاهز للتحليل</div>`;
       const preview = document.getElementById('extractedPreview');
       preview.textContent = text.substring(0, 300) + '...';
       preview.style.display = 'block';
-    } catch(e) { showError('فشل في قراءة الـ PDF. جرب تنسخ النص يدوياً.'); }
+    } catch(e) {
+      area.classList.remove('loading-state');
+      area.innerHTML = `<div class="upload-icon">📋</div><div class="upload-text"><strong>اضغط هنا أو اسحب الملف</strong><br>PDF · صورة · ملف نصي</div>`;
+      showError('فشل في قراءة الـ PDF. جرب تنسخ النص يدوياً.');
+    }
   } else if (file.type === 'text/plain') {
     extractedText = await file.text();
     const preview = document.getElementById('extractedPreview');

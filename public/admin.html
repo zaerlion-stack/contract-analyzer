@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة التحكم — محلل العقود</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; direction: rtl; }
+
+/* Login screen */
+.login-screen {
+  min-height: 100vh; display: flex; align-items: center;
+  justify-content: center; background: #0f1117;
+}
+.login-box {
+  background: #1a1f2e; border: 1px solid #2d3748;
+  border-radius: 20px; padding: 40px; width: 380px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+}
+.login-box h2 { font-size: 22px; margin-bottom: 6px; color: #fff; }
+.login-box p { color: #718096; font-size: 14px; margin-bottom: 28px; }
+.login-box input {
+  width: 100%; padding: 12px 16px; background: #0f1117;
+  border: 1px solid #2d3748; border-radius: 10px;
+  color: #e2e8f0; font-size: 14px; margin-bottom: 14px;
+  font-family: inherit; direction: ltr;
+  transition: border-color 0.2s;
+}
+.login-box input:focus { outline: none; border-color: #667eea; }
+.btn-primary {
+  width: 100%; padding: 13px; background: linear-gradient(135deg, #667eea, #764ba2);
+  border: none; border-radius: 10px; color: white;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  font-family: inherit; transition: opacity 0.2s;
+}
+.btn-primary:hover { opacity: 0.9; }
+.login-error { color: #fc8181; font-size: 13px; margin-top: 10px; display: none; }
+
+/* Dashboard */
+.dashboard { display: none; }
+
+.topbar {
+  background: #1a1f2e; border-bottom: 1px solid #2d3748;
+  padding: 0 28px; height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.topbar-left { display: flex; align-items: center; gap: 12px; }
+.topbar-logo { font-size: 20px; font-weight: 800; color: #fff; }
+.admin-badge {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white; font-size: 11px; font-weight: 700;
+  padding: 2px 10px; border-radius: 20px;
+}
+.btn-logout-admin {
+  padding: 8px 16px; background: #2d3748;
+  border: 1px solid #4a5568; border-radius: 8px;
+  color: #a0aec0; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+  transition: all 0.2s;
+}
+.btn-logout-admin:hover { background: #3d4a5c; color: #fff; }
+
+.content { max-width: 1200px; margin: 0 auto; padding: 28px 20px; }
+
+/* Stats */
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+.stat-card {
+  background: #1a1f2e; border: 1px solid #2d3748;
+  border-radius: 16px; padding: 22px 24px;
+}
+.stat-card .stat-num { font-size: 36px; font-weight: 800; margin-bottom: 4px; }
+.stat-card .stat-lbl { font-size: 13px; color: #718096; }
+.stat-card.blue .stat-num { color: #63b3ed; }
+.stat-card.purple .stat-num { color: #b794f4; }
+.stat-card.red .stat-num { color: #fc8181; }
+
+/* Search */
+.toolbar {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 16px;
+}
+.search-input {
+  flex: 1; padding: 10px 14px; background: #1a1f2e;
+  border: 1px solid #2d3748; border-radius: 10px;
+  color: #e2e8f0; font-size: 14px; font-family: inherit;
+  transition: border-color 0.2s;
+}
+.search-input:focus { outline: none; border-color: #667eea; }
+.btn-refresh {
+  padding: 10px 18px; background: #2d3748;
+  border: 1px solid #4a5568; border-radius: 10px;
+  color: #a0aec0; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: all 0.2s;
+  white-space: nowrap;
+}
+.btn-refresh:hover { background: #667eea; color: #fff; border-color: #667eea; }
+
+/* Table */
+.table-wrap {
+  background: #1a1f2e; border: 1px solid #2d3748;
+  border-radius: 16px; overflow: hidden;
+}
+table { width: 100%; border-collapse: collapse; }
+thead tr { background: #141824; }
+th {
+  padding: 13px 16px; text-align: right;
+  font-size: 11px; font-weight: 700; color: #718096;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  border-bottom: 1px solid #2d3748;
+  white-space: nowrap;
+}
+th:last-child { text-align: center; }
+td {
+  padding: 14px 16px; font-size: 13px;
+  border-bottom: 1px solid #1e2535; vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #1e2535; }
+
+.user-name-cell { font-weight: 600; color: #fff; font-size: 14px; }
+.user-email-cell { color: #a0aec0; font-size: 12px; margin-top: 2px; }
+.user-phone { color: #718096; font-size: 12px; }
+.usage-cell { text-align: center; }
+.usage-bar-wrap { display: flex; align-items: center; gap: 8px; justify-content: center; }
+.usage-bar-bg {
+  width: 70px; height: 6px; background: #2d3748;
+  border-radius: 3px; overflow: hidden;
+}
+.usage-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.usage-text { font-size: 12px; font-weight: 700; white-space: nowrap; }
+.usage-text.ok { color: #68d391; }
+.usage-text.warn { color: #f6ad55; }
+.usage-text.full { color: #fc8181; }
+
+.date-cell { color: #718096; font-size: 12px; white-space: nowrap; }
+
+/* Action buttons */
+.actions-cell { text-align: center; white-space: nowrap; }
+.action-btns { display: flex; gap: 6px; justify-content: center; align-items: center; flex-wrap: wrap; }
+.btn-action {
+  padding: 5px 10px; border: none; border-radius: 6px;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  font-family: inherit; transition: all 0.15s;
+}
+.btn-add    { background: #1c3a2e; color: #68d391; }
+.btn-add:hover { background: #276749; color: #fff; }
+.btn-sub    { background: #3d2a1a; color: #f6ad55; }
+.btn-sub:hover { background: #c05621; color: #fff; }
+.btn-reset  { background: #1a2d3d; color: #63b3ed; }
+.btn-reset:hover { background: #2b6cb0; color: #fff; }
+.btn-set    { background: #2d1b4e; color: #d6bcfa; }
+.btn-set:hover { background: #6b46c1; color: #fff; }
+.btn-del    { background: #3d1a1a; color: #fc8181; }
+.btn-del:hover { background: #c53030; color: #fff; }
+
+/* Loading / empty */
+.table-loading { text-align: center; padding: 60px; color: #718096; }
+.loading-spin {
+  width: 36px; height: 36px;
+  border: 3px solid #2d3748; border-top-color: #667eea;
+  border-radius: 50%; animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Modal */
+.modal-bg {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; display: none;
+}
+.modal-bg.show { display: flex; }
+.modal-box {
+  background: #1a1f2e; border: 1px solid #2d3748;
+  border-radius: 16px; padding: 28px; width: 340px;
+}
+.modal-box h3 { font-size: 17px; margin-bottom: 16px; color: #fff; }
+.modal-box input {
+  width: 100%; padding: 10px 14px; background: #0f1117;
+  border: 1px solid #2d3748; border-radius: 8px;
+  color: #e2e8f0; font-size: 14px; margin-bottom: 14px;
+  font-family: inherit; direction: ltr;
+}
+.modal-box input:focus { outline: none; border-color: #667eea; }
+.modal-btns { display: flex; gap: 10px; }
+.modal-btns button { flex: 1; padding: 10px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.btn-confirm { background: #667eea; color: white; }
+.btn-confirm:hover { background: #5a67d8; }
+.btn-cancel  { background: #2d3748; color: #a0aec0; }
+.btn-cancel:hover { background: #3d4a5c; }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: #1a1f2e; border: 1px solid #2d3748;
+  border-radius: 10px; padding: 12px 24px;
+  font-size: 14px; font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  z-index: 2000; opacity: 0; transition: opacity 0.3s;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; }
+.toast.success { border-color: #68d391; color: #68d391; }
+.toast.error   { border-color: #fc8181; color: #fc8181; }
+</style>
+</head>
+<body>
+
+<!-- Login Screen -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <h2>🔐 لوحة التحكم</h2>
+    <p>ادخل كلمة السر للدخول</p>
+    <input type="password" id="adminSecret" placeholder="Admin Secret" onkeydown="if(event.key==='Enter') doLogin()" />
+    <button class="btn-primary" onclick="doLogin()">دخول</button>
+    <div class="login-error" id="loginError">كلمة السر غلط!</div>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div class="dashboard" id="dashboard">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">🏠 محلل العقود</div>
+      <span class="admin-badge">ADMIN</span>
+    </div>
+    <button class="btn-logout-admin" onclick="doLogout()">خروج</button>
+  </div>
+
+  <div class="content">
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card blue">
+        <div class="stat-num" id="statUsers">—</div>
+        <div class="stat-lbl">إجمالي المستخدمين</div>
+      </div>
+      <div class="stat-card purple">
+        <div class="stat-num" id="statAnalyses">—</div>
+        <div class="stat-lbl">إجمالي العقود المحللة</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-num" id="statFull">—</div>
+        <div class="stat-lbl">وصلوا للحد المسموح</div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <input class="search-input" id="searchInput" placeholder="🔍  ابحث باسم أو إيميل أو موبايل..." oninput="renderTable()" />
+      <button class="btn-refresh" onclick="loadUsers()">🔄 تحديث</button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <div class="table-loading" id="tableLoading">
+        <div class="loading-spin"></div>
+        جاري تحميل المستخدمين...
+      </div>
+      <table id="usersTable" style="display:none">
+        <thead>
+          <tr>
+            <th>المستخدم</th>
+            <th>موبايل</th>
+            <th>الاستخدام</th>
+            <th>تاريخ التسجيل</th>
+            <th>الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="usersBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Set Limit Modal -->
+<div class="modal-bg" id="setModal">
+  <div class="modal-box">
+    <h3>✏️ تحديد الحد المسموح</h3>
+    <input type="number" id="setLimitInput" placeholder="عدد العقود المسموح" min="0" max="9999" />
+    <div class="modal-btns">
+      <button class="btn-confirm" onclick="confirmSetLimit()">تأكيد</button>
+      <button class="btn-cancel" onclick="closeModal()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '';
+let adminSecret = '';
+let allUsers = [];
+let pendingUserId = null;
+
+// Login
+function doLogin() {
+  const val = document.getElementById('adminSecret').value.trim();
+  if (!val) return;
+  adminSecret = val;
+  sessionStorage.setItem('admin_secret', val);
+  loadUsers();
+}
+
+function doLogout() {
+  sessionStorage.removeItem('admin_secret');
+  adminSecret = '';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('adminSecret').value = '';
+}
+
+// Auto-login from session
+const saved = sessionStorage.getItem('admin_secret');
+if (saved) { adminSecret = saved; loadUsers(); }
+
+async function loadUsers() {
+  document.getElementById('loginError').style.display = 'none';
+  document.getElementById('tableLoading').style.display = 'block';
+  document.getElementById('usersTable').style.display = 'none';
+
+  try {
+    const res = await fetch('/api/admin-users', {
+      headers: { 'x-admin-secret': adminSecret }
+    });
+
+    if (res.status === 401) {
+      document.getElementById('loginError').style.display = 'block';
+      document.getElementById('loginScreen').style.display = 'flex';
+      document.getElementById('dashboard').style.display = 'none';
+      return;
+    }
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    allUsers = data.users;
+
+    // Show dashboard
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+
+    // Update stats
+    document.getElementById('statUsers').textContent = data.stats.total_users;
+    document.getElementById('statAnalyses').textContent = data.stats.total_analyses;
+    document.getElementById('statFull').textContent = data.stats.out_of_limit;
+
+    renderTable();
+
+  } catch(err) {
+    showToast('خطأ: ' + err.message, 'error');
+  } finally {
+    document.getElementById('tableLoading').style.display = 'none';
+  }
+}
+
+function renderTable() {
+  const query = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = allUsers.filter(u =>
+    u.name.toLowerCase().includes(query) ||
+    u.email.toLowerCase().includes(query) ||
+    u.phone.includes(query)
+  );
+
+  const body = document.getElementById('usersBody');
+  if (filtered.length === 0) {
+    body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#718096;padding:40px">لا توجد نتائج</td></tr>';
+    document.getElementById('usersTable').style.display = 'table';
+    return;
+  }
+
+  body.innerHTML = filtered.map(u => {
+    const pct = u.analyses_limit > 0 ? Math.min(100, (u.analyses_used / u.analyses_limit) * 100) : 0;
+    const barColor = pct >= 100 ? '#fc8181' : pct >= 70 ? '#f6ad55' : '#68d391';
+    const textClass = pct >= 100 ? 'full' : pct >= 70 ? 'warn' : 'ok';
+    const date = new Date(u.created_at).toLocaleDateString('ar-EG');
+    return `
+      <tr>
+        <td>
+          <div class="user-name-cell">${esc(u.name)}</div>
+          <div class="user-email-cell">${esc(u.email)}</div>
+        </td>
+        <td class="user-phone">${esc(u.phone)}</td>
+        <td class="usage-cell">
+          <div class="usage-bar-wrap">
+            <div class="usage-bar-bg"><div class="usage-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
+            <span class="usage-text ${textClass}">${u.analyses_used} / ${u.analyses_limit}</span>
+          </div>
+        </td>
+        <td class="date-cell">${date}</td>
+        <td class="actions-cell">
+          <div class="action-btns">
+            <button class="btn-action btn-add"    onclick="doAction('${u.id}','increase')">+1</button>
+            <button class="btn-action btn-sub"    onclick="doAction('${u.id}','decrease')">-1</button>
+            <button class="btn-action btn-set"    onclick="openSetModal('${u.id}')">✏️ تحديد</button>
+            <button class="btn-action btn-reset"  onclick="doAction('${u.id}','reset_usage')">🔄 صفر</button>
+            <button class="btn-action btn-del"    onclick="deleteUser('${u.id}','${esc(u.name)}')">🗑️ حذف</button>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('usersTable').style.display = 'table';
+}
+
+async function doAction(userId, action, value) {
+  try {
+    const res = await fetch('/api/admin-update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-secret': adminSecret },
+      body: JSON.stringify({ userId, action, value })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    // Update local data
+    const u = allUsers.find(x => x.id === userId);
+    if (u && data.updated) {
+      if ('analyses_limit' in data.updated) u.analyses_limit = data.updated.analyses_limit;
+      if ('analyses_used'  in data.updated) u.analyses_used  = data.updated.analyses_used;
+    }
+
+    renderTable();
+    const labels = { increase: '✅ زودنا الحد', decrease: '✅ قللنا الحد', set: '✅ تم التحديد', reset_usage: '✅ تم صفر الاستخدام' };
+    showToast(labels[action] || '✅ تم', 'success');
+  } catch(err) {
+    showToast('خطأ: ' + err.message, 'error');
+  }
+}
+
+function openSetModal(userId) {
+  pendingUserId = userId;
+  document.getElementById('setLimitInput').value = '';
+  document.getElementById('setModal').classList.add('show');
+  setTimeout(() => document.getElementById('setLimitInput').focus(), 100);
+}
+
+function closeModal() {
+  document.getElementById('setModal').classList.remove('show');
+  pendingUserId = null;
+}
+
+function confirmSetLimit() {
+  const val = document.getElementById('setLimitInput').value;
+  if (val === '') return;
+  closeModal();
+  doAction(pendingUserId, 'set', parseInt(val));
+}
+
+async function deleteUser(userId, name) {
+  if (!confirm('مؤكد إنك عايز تمسح "' + name + '"؟ العملية مش هترجع.')) return;
+  try {
+    const res = await fetch('/api/admin-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-secret': adminSecret },
+      body: JSON.stringify({ userId })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    allUsers = allUsers.filter(u => u.id !== userId);
+    renderTable();
+    document.getElementById('statUsers').textContent = allUsers.length;
+    showToast('✅ تم حذف المستخدم', 'success');
+  } catch(err) {
+    showToast('خطأ: ' + err.message, 'error');
+  }
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (type || '');
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Close modal on bg click
+document.getElementById('setModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+</body>
+</html>
