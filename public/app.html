@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -197,6 +197,19 @@
     box-shadow: 0 2px 8px rgba(102,126,234,0.3);
   }
   .btn-pdf:hover { opacity: 0.85; }
+
+  .btn-pdf-big {
+    width: 100%; padding: 16px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white; border: none; border-radius: 12px;
+    font-size: 17px; font-weight: 700; cursor: pointer;
+    margin-bottom: 20px; font-family: inherit;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    box-shadow: 0 4px 14px rgba(102,126,234,0.35);
+    transition: all 0.2s;
+  }
+  .btn-pdf-big:hover { opacity: 0.9; transform: translateY(-1px); }
+
   .results-badge {
     font-size: 12px; font-weight: 600;
     padding: 3px 10px; border-radius: 20px; border: 1px solid;
@@ -568,17 +581,16 @@ function displayResults(analysis, usage, remaining) {
   window._lastAnalysis = analysis;
   window._lastUsage = usage;
 
-  const costBadge = usage ? `<span class="cost-badge">💰 $${usage.cost_usd}</span>` : '';
+
   const remainBadge = remaining !== undefined ? `<span class="remaining-badge">🎫 فاضل ${remaining} عقد</span>` : '';
 
   let html = `
     <div class="results-header">
       <h2>📊 نتيجة التحليل</h2>
       ${redFlagsCount > 0 ? `<span class="results-badge" style="background:#fff5f5;color:#c53030;border-color:#feb2b2;">⚠️ ${redFlagsCount} تحذير</span>` : ''}
-      ${costBadge}
       ${remainBadge}
-      <button class="btn-pdf" onclick="downloadPDF()">⬇️ PDF</button>
     </div>
+    <button class="btn-pdf-big" onclick="downloadPDF()">📄 تحميل الملخص PDF</button>
     <div class="summary-bar">
       <div class="summary-stat"><span class="num red">${redFlagsCount}</span><span class="lbl">Red Flags</span></div>
       <div class="summary-stat"><span class="num orange">${notesCount}</span><span class="lbl">ملاحظة مهمة</span></div>
